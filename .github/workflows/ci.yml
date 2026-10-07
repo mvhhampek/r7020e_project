@@ -1,0 +1,34 @@
+# ran by github actions on push:
+
+name: CI
+
+# when to trigger pipeline:
+on:
+  push: # on push
+    branches:
+      - main # to main branch
+  pull_request: # on pr 
+    branches:
+      - main # to main branch
+
+jobs:
+  test:
+    runs-on: ubuntu-latest # run fresh ubuntu machine
+
+    steps: # run in order
+      - name: check out repo
+        uses: actions/checkout@v4
+
+      - name: set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: install requirements
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: run tests
+        run: python -m pytest tests/ -v
