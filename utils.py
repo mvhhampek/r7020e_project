@@ -201,6 +201,52 @@ def get_detected_object_xyz(depth_img, cropped_depth, P, x1, y1):
     return np.asarray(XYZ_mm), np.asarray(global_pos)
 
 
+##### DEPTH HISTOGRAM CLASSIFICATION #####
+
+def classify_detection(cropped_depth):
+    depths = cropped_depth.flatten()
+    depths = depths[depths > 200]
+    if len(depths) == 0:
+        return None
+
+    counts, bin_edges = np.histogram(depths, bins=50)
+    mask = counts >= 20
+    filtered_counts = counts[mask]
+    filtered_edges = bin_edges[:-1][mask]
+    if len(filtered_edges) == 0:
+        return None
+    
+    zero_bins = np.where(counts == 0)[0]
+    gaps = []
+    if len(zero_bins) > 0:
+        start = zero_bins[0]
+        for i in range(1, len(zero_bins)):
+            if zero_bins[i] != zero_bins[i-1] + 1:
+                gaps.append((bin_edges[start], bin_edges[zero_bins[i-1] + 1]))
+                start = zero_bins[i]
+        gaps.append((bin_edges[start], bin_edges[zero_bins[-1] + 1]))
+
+    largest_gap = max(gaps, key=lambda x: x[1]-x[0]) if gaps else None
+    if largest_gap is not None:
+        largest_gap= largest_gap[1] - largest_gap[0]
+        
+        
+    has_large_gap = largest_gap is not None
+    if has_large_gap:
+        has_large_gap = largest_gap >= 1000
+
+
+
+
+    _min = filtered_edges.min()
+    _max = filtered_edges.max()
+    rng = _max - _min
+    large_range = rng >= 2000
+    real = large_range and not has_large_gap
+    
+    return real
+
+
 ##### CHANGE BB SIZE #####
 def scale_bb(x1, y1, x2, y2, H, W, scale):
     """
